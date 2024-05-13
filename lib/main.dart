@@ -1,27 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 void main() => runApp(MyApp());
+
 final lightTheme = ThemeData(
   primarySwatch: Colors.blue,
   brightness: Brightness.light,
 );
+
 final darkTheme = ThemeData(
   primarySwatch: Colors.blue,
   brightness: Brightness.dark,
 );
-dynamic currentTheme = isDarkMode ? darkTheme : lightTheme;
+
+class ThemeBloc extends Cubit<ThemeData> {
+  ThemeBloc() : super(lightTheme);
+
+  void toggleTheme() {
+    emit(state.brightness == Brightness.light ? darkTheme : lightTheme);
+  }
+}
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Stroke Classification App',
-      theme: currentTheme,
-      home: MyHomePage(title: 'Stroke Classification'),
+    return BlocProvider(
+      create: (_) => ThemeBloc(),
+      child: BlocBuilder<ThemeBloc, ThemeData>(
+        builder: (context, theme) {
+          return MaterialApp(
+            title: 'Stroke Classification App',
+            theme: theme,
+            home: MyHomePage(title: 'Stroke Classification'),
+          );
+        },
+      ),
     );
   }
 }
@@ -34,10 +49,35 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-bool isDarkMode = true;
+Future<dynamic> post(
+    {required String url, @required dynamic body, String? token}) async {
+  try {
+    print("1");
+    // final timeout = const Duration(seconds: 30);
+    Map<String, String> header = {"Content-Type": "application/json"};
+    if (token != null) {
+      header.addAll({'Authorization': 'Bearer $token'});
+    }
+    print("2");
+    http.Response response =
+        await http.post(Uri.parse(url), body: body, headers: header);
+    print("3");
+    if (response.statusCode == 200) {
+      print("4");
+      return jsonDecode(response.body);
+    } else {
+      print(
+          'there is a problem with status code${response.statusCode} with bode ${jsonDecode(response.body)}');
+      // throw Exception(
+      // 'there is a problem with status code${response.statusCode} with bode ${jsonDecode(response.body)}');
+    }
+  } catch (e) {
+    print('An error occurred: $e'); // Printing the exception message
+  }
+}
 
 class _MyHomePageState extends State<MyHomePage> {
-  // bool isDarkMode = false;
+  bool isDarkMode = true;
   double glucoseLevel = 50;
   double bmi = 20.0; // Default BMI value
   String residenceType = 'Urban';
@@ -62,50 +102,6 @@ class _MyHomePageState extends State<MyHomePage> {
     "smoking_status": "never smoked",
     "smoking_not_found": "False"
   };
-
-  Future<dynamic> post(
-      {required String url, @required dynamic body, String? token}) async {
-    try {
-      print("1");
-      // final timeout = const Duration(seconds: 30);
-      Map<String, String> header = {"Content-Type": "application/json"};
-      if (token != null) {
-        header.addAll({'Authorization': 'Bearer $token'});
-      }
-      print("2");
-      http.Response response =
-          await http.post(Uri.parse(url), body: body, headers: header);
-      print("3");
-      if (response.statusCode == 200) {
-        print("4");
-        return jsonDecode(response.body);
-      } else {
-        print(
-            'there is a problem with status code${response.statusCode} with bode ${jsonDecode(response.body)}');
-        // throw Exception(
-        // 'there is a problem with status code${response.statusCode} with bode ${jsonDecode(response.body)}');
-      }
-    } catch (e) {
-      print('An error occurred: $e'); // Printing the exception message
-    }
-  }
-
-  Future<dynamic> classifyStroke({required String uri, String? token}) async {
-    Map<String, String> header = {};
-    if (token != null) {
-      header.addAll({'Authorization': 'Bearer $token'});
-    }
-    http.Response response = await http.get(Uri.parse(uri), headers: header);
-    if (response.statusCode == 200) {
-      print("hello");
-      return jsonDecode(response.body);
-    } else {
-      print("hello2");
-      throw Exception(
-          'there is a problem with status code${response.statusCode}');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -116,10 +112,8 @@ class _MyHomePageState extends State<MyHomePage> {
             icon: Icon(isDarkMode ? Icons.wb_sunny : Icons.nightlight_round),
             onPressed: () {
               setState(() {
-                print("hi");
-
                 isDarkMode = !isDarkMode;
-                currentTheme = isDarkMode ? darkTheme : lightTheme;
+                context.read<ThemeBloc>().toggleTheme();
               });
             },
           ),
@@ -131,6 +125,7 @@ class _MyHomePageState extends State<MyHomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Add your UI components here...
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -532,6 +527,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 'Result: ${result == '1' ? "Clear" : result == '0' ? "Potential Stroke" : "..."}',
                 style: TextStyle(fontSize: 16),
               ),
+              // Add your UI components here...
             ],
           ),
         ),
