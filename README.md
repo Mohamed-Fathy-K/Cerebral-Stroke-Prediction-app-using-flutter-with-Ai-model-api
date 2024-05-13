@@ -7,4 +7,11 @@ The Stroke Classification App is a Flutter mobile application designed to assess
 - User-friendly interface for inputting stroke risk parameters.
 - Real-time stroke risk classification using a machine learning model.
 - Support for both light and dark themes.
-  
+
+## Screenshots
+
+<div style="display: flex; justify-content: center;">
+    <img src="screenshots/1.jpeg" alt="Screenshot 1" width="400" style="margin-right: 20px;">
+    <img src="screenshots/2.jpeg" alt="Screenshot 2" width="400">
+</div>
+
